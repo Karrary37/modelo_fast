@@ -4,8 +4,8 @@ from fastapi import FastAPI
 
 from auth import api as api_auth
 from config import settings
-from file import api as api_file
-from file.api import jwt_protected_router
+from shortener import api as api_file
+from shortener.api import jwt_protected_router
 
 app = FastAPI(title=settings.APP_NAME)
 
