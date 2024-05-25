@@ -10,6 +10,7 @@ from config import settings
 from file import api as api_file
 from file.api import jwt_protected_router
 # from file.consumidor import start_rabbitmq_consumer
+from app.adapters.api.fastapi_adapter import app
 
 # if settings.IS_PROD:
 #     sentry_sdk.init(
