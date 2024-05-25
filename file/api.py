@@ -1,12 +1,14 @@
-
 from fastapi import APIRouter
+
+from file.schemes import ShortenerRequest
 
 router = APIRouter()
 jwt_protected_router = APIRouter()
 
 
-@router.post('/teste')
-async def send_contract(
+@router.post('/shortener')
+async def shortener_link(
+        body: ShortenerRequest
 ):
-    print('---------------------')
-
+    print(body.url)
+    return {"message": "OK"}
