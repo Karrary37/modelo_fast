@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from file.schemes import ShortenerRequest
+from shortener.schemes import ShortenerRequest
 
 router = APIRouter()
 jwt_protected_router = APIRouter()
