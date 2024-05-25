@@ -1,0 +1,60 @@
+{
+    "family": "task-byx-roteador-contrato-prod",
+    "containerDefinitions": [
+        {
+            "name": "container-byx-roteador-contrato-prod",
+            "image": "455629891108.dkr.ecr.us-east-1.amazonaws.com/byx-roteador-contrato-prod:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "container-port-byx-roteador-contrato-prod",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "NEW_RELIC_APP_NAME",
+                    "value": "byx-roteador-contrato"
+                },
+                {
+                    "name": "CNAME",
+                    "value": "roteador-contrato"
+                }
+            ],
+            "environmentFiles": [
+                {
+                    "value": "arn:aws:s3:::byxenvs-prod/roteador-contrato/.env",
+                    "type": "s3"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "byx-roteador-contrato-prod",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::455629891108:role/ECS-Task-Execution-Role-CESSAO-PROD",
+    "executionRoleArn": "arn:aws:iam::455629891108:role/ECS-Task-Execution-Role-CESSAO-PROD",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "cpu": "1024",
+    "memory": "2048"
+}

@@ -1,0 +1,28 @@
+[flake8]
+ignore =
+    D101
+    D100
+    D102
+    D103
+    D105
+    D106
+    D203
+    E203
+    E501
+    W503
+    C901
+
+exclude =
+    .git,
+    __pycache__,
+    venv
+    build,
+    dist
+
+
+per-file-ignores =
+    */__init__.py: F401
+
+
+max-complexity = 18
+select = B,C,E,F,W,T4,B9
