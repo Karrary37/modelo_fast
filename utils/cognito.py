@@ -1,5 +1,4 @@
 import json
-import logging
 
 import boto3
 import jwt
@@ -35,9 +34,8 @@ class Cognito:
                 'expires_in': expires_in,
             }
         except Exception as e:
-            logger = logging.getLogger('esteira')
-
-            logger.error(f'Error in authentications: {e}')
+            # TODO log para registro de tentativas
+            print(e)
 
         return auth_result
 

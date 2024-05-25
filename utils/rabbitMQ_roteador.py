@@ -1,11 +1,9 @@
 import json
-import logging
 import ssl
 
 import pika
 
-from utils.define_routing_key import define_routing_key
-from utils.rabbitMQ_parameters import get_rabbitmq_parameters
+from config import settings
 
 
 class Router:
@@ -27,10 +25,6 @@ class Router:
     """
 
     def __init__(self):
-        self.channel = None
-        self.connection = None
-        self.exchange_name = 'roteador_contrato'
-        self.logger = logging.getLogger('roteador')
         self.setup_connection()
 
     def setup_connection(self):
@@ -41,12 +35,19 @@ class Router:
         ssl_context.set_ciphers('ECDHE+AESGCM:!ECDSA')
 
         # Form the AMQPS URL
-        parameters = get_rabbitmq_parameters()
+        amqps_url = (
+            f'amqps://{settings.AWS_USER_RABBIT}:{settings.AWS_PASSWORD_RABBIT}'
+            f'@{settings.AWS_URL_RABBIT}.mq.{settings.AWS_REGION}.amazonaws.com:5671'
+        )
+
+        # Create connection parameters from the AMQPS URL
+        parameters = pika.URLParameters(amqps_url)
+        parameters.ssl_options = pika.SSLOptions(context=ssl_context)
 
         # Establish connection and declare exchange
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
-
+        self.exchange_name = 'roteador_contrato'
         self.channel.exchange_declare(
             exchange=self.exchange_name, exchange_type='topic', durable=True
         )
@@ -61,8 +62,8 @@ class Router:
         Returns:
             None
         """
-        destino = payload.get('destiny')
-        routing_key = define_routing_key(str(destino))
+        type = payload.get('destiny')
+        routing_key = str(type)
         # Send the message to the exchange with the route key
         self.channel.basic_publish(
             exchange=self.exchange_name,
@@ -70,10 +71,7 @@ class Router:
             body=json.dumps(payload),
             properties=pika.BasicProperties(delivery_mode=2),
         )
-        logger = logging.getLogger('roteador')
-        logger.info(
-            f'Contract {payload["content"]["contrato"]["nuContratoCedente"]} sent with route key {routing_key}'
-        )
+        print(f'Message sent with route key {routing_key}')
 
     def close_connection(self):
         """

@@ -2,12 +2,11 @@ import json
 import logging
 import ssl
 
-import newrelic.agent
 import pika
 
+from config import settings
 from utils.dynamo import DynamoDBClient
 from utils.hash import make_duplicity_hash
-from utils.rabbitMQ_parameters import get_rabbitmq_parameters
 from utils.rabbitMQ_roteador import Router
 
 
@@ -22,26 +21,31 @@ class RabbitMQConsumer:
         """
         Initializes the consumer with the specified queue name and sets up RabbitMQ connection.
         """
-        self.logger = logging.getLogger('consumer')
         self.setup_connection()
 
     def setup_connection(self):
         """Establishes connection to RabbitMQ server and declares the queue."""
         try:
+            logger = logging.getLogger('setup_consumer')
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.set_ciphers('ECDHE+AESGCM:!ECDSA')
 
             # Form the AMQPS URL
-            parameters = get_rabbitmq_parameters()
+            amqps_url = (
+                f'amqps://{settings.AWS_USER_RABBIT}:{settings.AWS_PASSWORD_RABBIT}'
+                f'@{settings.AWS_URL_RABBIT}.mq.{settings.AWS_REGION}.amazonaws.com:5671'
+            )
+
             # Create connection parameters from the AMQPS URL
+            parameters = pika.URLParameters(amqps_url)
+            parameters.ssl_options = pika.SSLOptions(context=ssl_context)
 
             # Establish connection and declare exchange
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
-            self.logger.info('Connection established successfully.')
+            logger.info('Conexão estabelecida com sucesso.')
         except Exception as e:
-            newrelic.agent.notice_error()
-            self.logger.error(f'Failed to establish connection: {e}')
+            logger.error(f'Erro ao estabelecer conexão: {e}')
             self.channel = None
 
     def start_consuming(self):
@@ -62,11 +66,11 @@ class RabbitMQConsumer:
 
         if self.channel is None:
             logger.error(
-                'Connection to RabbitMQ not established. It is not possible to start consuming.'
+                'Conexão com o RabbitMQ não estabelecida. Não é possível começar a consumir.'
             )
             return
 
-        self.logger.info('Starting message consumption.')
+        print('Iniciando consumo de mensagens.')
         self.channel.start_consuming()
 
     def validate_eligibility(self, ch, method, properties, body):
@@ -90,9 +94,7 @@ class RabbitMQConsumer:
             else:
                 type_history = 3
                 insert_contract_client = DynamoDBClient('inserir_contrato')
-                logger.info(
-                    f'Contrato {message["nuContratoFacta"]} | Deleting from the table inserir_contrato'
-                )
+                logger.info(f'Contrato {message["nuContratoFacta"]} | Deletando da tabela de inserir_contrato')
                 insert_contract_client.delete_item({'ud_hash_contrato': hash_duplicity})
 
             history_client = DynamoDBClient('historico_contrato')
@@ -100,7 +102,6 @@ class RabbitMQConsumer:
                 message['nuContratoFacta'], cessionario, hash_duplicity, type_history
             )
         except Exception as err:
-            newrelic.agent.notice_error()
             logger.warning(f'[Erro] validate_eligibility | {str(err)}')
 
     def message_callback(self, ch, method, properties, body):
@@ -123,13 +124,14 @@ class RabbitMQConsumer:
         hash_eligibility = message.get('hash_elegibilidade')
         cedente = message.get('cedente')
         payload = message.get('payload')
+        cessionario = payload.get('cessionario')
 
         dynamo_client_history = DynamoDBClient('historico_contrato')
 
         if operation_type == 'insert':
             logger = logging.getLogger('duplicidade')
             logger.info(
-                f'Contrato: {payload["contrato"]["nuContratoCedente"]} | Start duplicity validation.'
+                f'Contrato: {payload["contrato"]["nuContratoCedente"]} | Inicio validação duplicidade.'
             )
             self.handle_insert_operation(
                 payload,
@@ -137,6 +139,10 @@ class RabbitMQConsumer:
                 hash_eligibility,
                 cedente,
                 dynamo_client_history,
+            )
+        elif operation_type == 'offered':
+            self.handle_offered_operation(
+                payload, hash_duplicity, cedente, cessionario, dynamo_client_history
             )
 
     def handle_insert_operation(
@@ -159,15 +165,40 @@ class RabbitMQConsumer:
             hash_duplicity,
             cedente,
         )
-        if response.status_code == 200:
-            self.process_response_and_route(
-                payload,
-                response,
-                cedente,
-                dynamo_client_history,
-                hash_duplicity,
-                operation_type=1,
-            )
+        self.process_response_and_route(
+            payload,
+            response,
+            cedente,
+            dynamo_client_history,
+            hash_duplicity,
+            operation_type=1,
+        )
+
+    def handle_offered_operation(
+        self, payload, hash_duplicity, cedente, cessionario, dynamo_client_history
+    ):
+        """
+        Processes offered operation, checks contract ownership, and routes message if conditions are met.
+
+        Args:
+            payload (dict): Contract payload.
+            hash_duplicity (str): Duplicity hash.
+            cedente (str): Cedente information.
+            cessionario (str): Cessionario information.
+            dynamo_client_history (DynamoDBClient): DynamoDB client for history table.
+        """
+        dynamo_client = DynamoDBClient('detentor_contrato')
+        response = dynamo_client.offered_contract_dynamo(
+            hash_duplicity, cedente, cessionario
+        )
+        self.process_response_and_route(
+            payload,
+            response,
+            cedente,
+            dynamo_client_history,
+            hash_duplicity,
+            operation_type=3,
+        )
 
     def process_response_and_route(
         self,
@@ -211,7 +242,7 @@ class RabbitMQConsumer:
                 operation_type + 1,
                 cedente,
             )
-            self.logger.info('Error save history.')
+            print('Error offered contratc.')
 
     def close_connection(self):
         """Closes the RabbitMQ connection."""

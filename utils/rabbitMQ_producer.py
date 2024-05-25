@@ -1,11 +1,9 @@
 import json
-import logging
 import ssl
 
-import newrelic.agent
 import pika
 
-from utils.rabbitMQ_parameters import get_rabbitmq_parameters
+from config import settings
 
 
 class RabbitMQProducer:
@@ -22,14 +20,11 @@ class RabbitMQProducer:
         close_connection: Closes the connection with the RabbitMQ server.
     """
 
-    def __init__(self, exchange_name='contracts_exchange'):
+    def __init__(self):
         """
         Initializes the RabbitMQ producer by establishing a connection and declaring an exchange.
         """
-        self.channel = None
-        self.connection = None
-        self.logger = logging.getLogger('consuming')
-        self.exchange_name = exchange_name
+        self.exchange_name = 'contracts_exchange'
         self.setup_connection()
 
     def setup_connection(self):
@@ -41,7 +36,15 @@ class RabbitMQProducer:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             ssl_context.set_ciphers('ECDHE+AESGCM:!ECDSA')
 
-            parameters = get_rabbitmq_parameters()
+            # Form the AMQPS URL
+            amqps_url = (
+                f'amqps://{settings.AWS_USER_RABBIT}:{settings.AWS_PASSWORD_RABBIT}'
+                f'@{settings.AWS_URL_RABBIT}.mq.{settings.AWS_REGION}.amazonaws.com:5671'
+            )
+
+            # Create connection parameters from the AMQPS URL
+            parameters = pika.URLParameters(amqps_url)
+            parameters.ssl_options = pika.SSLOptions(context=ssl_context)
 
             # Establish connection and declare exchange
             self.connection = pika.BlockingConnection(parameters)
@@ -49,14 +52,9 @@ class RabbitMQProducer:
             self.channel.exchange_declare(
                 exchange=self.exchange_name, exchange_type='direct', durable=True
             )
-            self.logger.info(
-                'Producer connection to Amazon MQ established successfully.'
-            )
+            print('Producer connection to Amazon MQ established successfully.')
         except Exception as e:
-            newrelic.agent.notice_error()
-            self.logger.error(
-                f'Failed to establish producer connection to Amazon MQ: {e}'
-            )
+            print(f'Failed to establish producer connection to Amazon MQ: {e}')
             self.channel = None
 
     def send_message(self, routing_key, payload):
@@ -64,7 +62,7 @@ class RabbitMQProducer:
         Sends a JSON message to the specified RabbitMQ exchange using a routing key.
         """
         if self.channel is None:
-            self.logger.info('Connection not established. Cannot send message.')
+            print('Connection not established. Cannot send message.')
             return
 
         self.channel.basic_publish(
@@ -80,4 +78,4 @@ class RabbitMQProducer:
         """
         if self.connection:
             self.connection.close()
-            self.logger.info('Connection closed.')
+            print('Connection closed.')
