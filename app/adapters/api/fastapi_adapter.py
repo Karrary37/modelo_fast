@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, HttpUrl
-from app.domain.models.link import LinkModel, LinkCreate, LinkSchema
 from app.domain.services.link_service import LinkService
 from app.domain.repositories.sqlalchemy_link_repository import SQLAlchemyLinkRepository
 from app.database import SessionLocal, engine, Base
