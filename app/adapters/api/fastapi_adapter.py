@@ -29,7 +29,7 @@ class LinkCreateRequest(BaseModel):
     original_url: HttpUrl
 
 class LinkCreateResponse(BaseModel):
-    url_encurtado: str
+    shortened_url: str
 
 @app.post('/shorten/', response_model=LinkCreateResponse)
 async def create_link(
@@ -41,7 +41,7 @@ async def create_link(
     verify_jwt_token(token)
     link = await service.shorten_url(str(request.original_url))
     shortened_url = f'{request_obj.base_url}{link.shortened_url}'
-    return {'url_encurtado': shortened_url}
+    return {'shortened_url': shortened_url}
 
 @app.get('/{shortened_url}/')
 async def redirect_to_original(
