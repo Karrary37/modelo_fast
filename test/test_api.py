@@ -11,16 +11,18 @@ async def async_client():
 
 @pytest.mark.asyncio
 async def test_create_link(async_client):
-    response = await async_client.post('/shorten/', json={"original_url": "https://example.com"})
-    assert response.status_code == 200
-    assert 'url_encurtado' in response.json()
+    async with async_client as client:
+        response = await client.post('/shorten/', json={"original_url": "https://example.com"})
+        assert response.status_code == 200
+        assert 'url_encurtado' in response.json()
 
 @pytest.mark.asyncio
 async def test_redirect_to_original(async_client):
-    response = await async_client.post('/shorten/', json={"original_url": "https://example.com"})
-    assert response.status_code == 200
-    shortened_url = response.json()['url_encurtado'].split('/')[-1]
+    async with async_client as client:
+        response = await client.post('/shorten/', json={"original_url": "https://example.com"})
+        assert response.status_code == 200
+        shortened_url = response.json()['url_encurtado'].split('/')[-1]
 
-    redirect_response = await async_client.get(f'/{shortened_url}/', allow_redirects=False)
-    assert redirect_response.status_code == 307
-    assert redirect_response.headers['location'] == 'https://example.com'
+        redirect_response = await client.get(f'/{shortened_url}/', allow_redirects=False)
+        assert redirect_response.status_code == 307
+        assert redirect_response.headers['location'] == 'https://example.com'
