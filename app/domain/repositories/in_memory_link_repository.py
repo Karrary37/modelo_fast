@@ -1,6 +1,8 @@
 from typing import Optional
+
 from app.domain.models.link import Link
 from app.domain.repositories.link_repository import LinkRepository
+
 
 class InMemoryLinkRepository(LinkRepository):
     def __init__(self):
