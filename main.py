@@ -6,6 +6,7 @@ from config import settings
 from app.domain.repositories.dynamodb_link_repository import create_dynamodb_table
 
 async def create_app() -> FastAPI:
+    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
     app = FastAPI(title=settings.APP_NAME)
 
     # Criar a tabela DynamoDB

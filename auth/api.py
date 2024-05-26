@@ -11,6 +11,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 @router.post('/login', response_model=AuthResponse)
 def login(auth_request: AuthRequest):
+    print('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
     username = auth_request.username
     password = auth_request.password
     if not authenticate_user(username, password):
