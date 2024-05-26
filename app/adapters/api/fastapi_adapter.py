@@ -1,11 +1,9 @@
 import logging
-
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, HttpUrl
-from sqlalchemy.orm import Session
-
-from app.database import Base, SessionLocal, engine
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import SessionLocal
 from app.domain.repositories.sqlalchemy_link_repository import SQLAlchemyLinkRepository
 from app.domain.services.link_service import LinkService
 from auth.api import oauth2_scheme
@@ -15,56 +13,42 @@ from auth.verify_jwt import verify_jwt_token
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Criar tabelas do banco de dados
-Base.metadata.create_all(bind=engine)
+async def get_db() -> AsyncSession:
+    async with SessionLocal() as session:
+        yield session
 
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def get_repository(db: Session = Depends(get_db)):
+async def get_repository(db: AsyncSession = Depends(get_db)) -> SQLAlchemyLinkRepository:
     return SQLAlchemyLinkRepository(db)
 
-
-def get_service(repository: SQLAlchemyLinkRepository = Depends(get_repository)):
+async def get_service(repository: SQLAlchemyLinkRepository = Depends(get_repository)) -> LinkService:
     return LinkService(repository)
 
-
 app = FastAPI()
-
 
 class LinkCreateRequest(BaseModel):
     original_url: HttpUrl
 
-
 class LinkCreateResponse(BaseModel):
     url_encurtado: str
 
-
 @app.post('/shorten/', response_model=LinkCreateResponse)
-def create_link(
+async def create_link(
     request: LinkCreateRequest,
     request_obj: Request,
     service: LinkService = Depends(get_service),
     token: str = Depends(oauth2_scheme),
 ):
     verify_jwt_token(token)
-    link = service.shorten_url(str(request.original_url))
+    link = await service.shorten_url(str(request.original_url))
     shortened_url = f'{request_obj.base_url}{link.shortened_url}'
     return {'url_encurtado': shortened_url}
 
-
 @app.get('/{shortened_url}/')
-def redirect_to_original(
+async def redirect_to_original(
     shortened_url: str, service: LinkService = Depends(get_service)
 ):
     logger.info('Chamada ao endpoint de redirecionamento')
-    link = service.get_original_url(shortened_url)
+    link = await service.get_original_url(shortened_url)
     logger.info(f'Link encontrado: {link}')
     if link is None:
         logger.error('Link não encontrado')
