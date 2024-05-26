@@ -10,3 +10,7 @@ class LinkRepository(ABC):
     @abstractmethod
     async def get_link_by_shortened_url(self, shortened_url: str) -> Optional[LinkModel]:
         pass
+
+    @abstractmethod
+    async def get_link_exists(self, shortened_url: str) -> Optional[LinkModel]:
+        pass

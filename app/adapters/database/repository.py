@@ -14,3 +14,6 @@ class InMemoryLinkRepository(LinkRepository):
 
     def get_link_by_shortened_url(self, shortened_url: str) -> Optional[Link]:
         return self.links.get(shortened_url)
+
+    def link_exists(self, shortened_url: str) -> bool:
+        return shortened_url in self.links

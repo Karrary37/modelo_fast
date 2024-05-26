@@ -9,7 +9,7 @@ class LinkService:
         self.repository = repository
 
     async def shorten_url(self, original_url: str) -> LinkModel:
-        shortened_url = self.generate_shortened_url()
+        shortened_url = self.generate_unique_shortened_url()
         link = LinkModel(id=shortened_url, original_url=original_url, shortened_url=shortened_url)
         return await self.repository.save_link(link)
 
@@ -19,3 +19,9 @@ class LinkService:
     def generate_shortened_url(self, length: int = 6) -> str:
         characters = string.ascii_letters + string.digits
         return ''.join(random.choice(characters) for _ in range(length))
+
+    def generate_unique_shortened_url(self, length: int = 6) -> str:
+        while True:
+            shortened_url = self.generate_shortened_url(length)
+            if not self.repository.get_link_exists(shortened_url):
+                return shortened_url
