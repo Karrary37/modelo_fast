@@ -10,7 +10,6 @@ class AuthRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     token: str
-    expires_in: int
 
 
 class TokenData(BaseModel):
