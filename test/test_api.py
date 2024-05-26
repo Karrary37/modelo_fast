@@ -6,8 +6,9 @@ from app.domain.repositories.dynamodb_link_repository import create_dynamodb_tab
 
 @pytest.fixture
 async def async_client():
-    async with AsyncClient(app=shorten_app, base_url="http://test") as client:
-        yield client
+    client = AsyncClient(app=shorten_app, base_url="http://test")
+    yield client
+    await client.aclose()
 
 @pytest.mark.asyncio
 async def test_create_link(async_client):
