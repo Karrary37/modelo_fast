@@ -1,27 +1,22 @@
 import pytest
-from httpx import AsyncClient
-from fastapi import FastAPI
 from app.adapters.api.api_shorten import app as shorten_app
-from app.domain.repositories.dynamodb_link_repository import create_dynamodb_table
+from fastapi.testclient import TestClient
 
 @pytest.fixture
-async def async_client():
-    client = AsyncClient(app=shorten_app, base_url="http://test")
-    yield client
-    await client.aclose()
+def client():
+    with TestClient(shorten_app) as client:
+        yield client
 
-@pytest.mark.asyncio
-async def test_create_link(async_client):
-    response = await async_client.post('/shorten/', json={"original_url": "https://example.com"})
+def test_create_link(client):
+    response = client.post('/shorten/', json={"original_url": "https://example.com"})
     assert response.status_code == 200
     assert 'url_encurtado' in response.json()
 
-@pytest.mark.asyncio
-async def test_redirect_to_original(async_client):
-    response = await async_client.post('/shorten/', json={"original_url": "https://example.com"})
+def test_redirect_to_original(client):
+    response = client.post('/shorten/', json={"original_url": "https://example.com"})
     assert response.status_code == 200
     shortened_url = response.json()['url_encurtado'].split('/')[-1]
 
-    redirect_response = await async_client.get(f'/{shortened_url}/', allow_redirects=False)
+    redirect_response = client.get(f'/{shortened_url}/', allow_redirects=False)
     assert redirect_response.status_code == 307
     assert redirect_response.headers['location'] == 'https://example.com'
