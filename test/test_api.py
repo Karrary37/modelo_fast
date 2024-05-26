@@ -1,5 +1,8 @@
 import sys
 import os
+
+from test.sqlite_link_repository import SQLiteLinkRepository
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
 import pytest
@@ -10,7 +13,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from app.adapters.api.api_shorten import app as shorten_app
-from tests.sqlite_link_repository import SQLiteLinkRepository, LinkModel
 
 DATABASE_URL = "sqlite:///./test.db"
 
