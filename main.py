@@ -1,24 +1,37 @@
 import logging.config
+
 from fastapi import FastAPI
-from app.adapters.api.fastapi_adapter import app as shorten_app
-from auth import api as api_auth
+
+from app.adapters.api.api_shorten import app as shorten_app
+from app.domain.repositories.dynamodb_link_repository import create_dynamodb_table
+from auth.adapters.api.api_auth import app as auth_app
 from config import settings
-from app.database import create_tables
+
+
+async def create_app() -> FastAPI:
+    await create_dynamodb_table()
+
+    logger = logging.getLogger('check_log')
+    logger.info('Iniciando aplicação')
+
+    return app
+
+
+# app = FastAPI()
 
 app = FastAPI(title=settings.APP_NAME)
 
-# Criar tabelas do banco de dados
-create_tables()
+# app.include_router(api_auth.router, prefix='/auth', tags=['auth'])
+app.mount('/', shorten_app)
+app.mount('/auth', auth_app)
 
-# Roteadores para as APIs
-app.include_router(api_auth.router, prefix='/auth', tags=['auth'])
 
-# Incluindo roteador do encurtador de links
-app.mount("/", shorten_app)
+@app.on_event('startup')
+async def startup_event():
+    await create_app()
 
-logger = logging.getLogger('check_log')
-logger.info('Iniciando aplicação')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
+
+    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)

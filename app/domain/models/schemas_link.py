@@ -1,7 +1,8 @@
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy import Column, String
+from sqlalchemy.ext.declarative import declarative_base
 
-from app.database import Base
+Base = declarative_base()
 
 
 class LinkModel(Base):

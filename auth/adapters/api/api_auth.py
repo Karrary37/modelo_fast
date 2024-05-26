@@ -1,15 +1,15 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from auth.authenticate_user import authenticate_user
-from auth.create_jwt import create_jwt_token
-from auth.schemes import AuthRequest, AuthResponse
+from auth.domain.models.schemas_auth import AuthRequest, AuthResponse
+from auth.domain.repositories.authenticate_user import authenticate_user
+from auth.domain.repositories.create_jwt import create_jwt_token
 
-router = APIRouter()
+app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 
-@router.post('/login', response_model=AuthResponse)
+@app.post('/login', response_model=AuthResponse)
 def login(auth_request: AuthRequest):
     username = auth_request.username
     password = auth_request.password

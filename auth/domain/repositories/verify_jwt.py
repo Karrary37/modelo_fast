@@ -1,7 +1,7 @@
 import jwt
 from fastapi import HTTPException, status
 
-from auth.schemes import TokenData
+from auth.domain.models.schemas_auth import TokenData
 from config import settings
 
 

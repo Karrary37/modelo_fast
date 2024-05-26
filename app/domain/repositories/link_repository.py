@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from app.domain.models.link import LinkModel
+
+from app.domain.models.schemas_link import LinkModel
+
 
 class LinkRepository(ABC):
     @abstractmethod
@@ -8,5 +10,7 @@ class LinkRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_link_by_shortened_url(self, shortened_url: str) -> Optional[LinkModel]:
+    async def get_link_by_shortened_url(
+        self, shortened_url: str
+    ) -> Optional[LinkModel]:
         pass
