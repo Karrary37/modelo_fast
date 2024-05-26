@@ -1,4 +1,4 @@
-from auth import fake_db as db
+from auth.domain.repositories import fake_db as db
 
 
 def authenticate_user(username: str, password: str):
