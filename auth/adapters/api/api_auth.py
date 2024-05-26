@@ -10,7 +10,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
 
 @app.post('/login', response_model=AuthResponse)
-def login(auth_request: AuthRequest):
+async def login(auth_request: AuthRequest):
     username = auth_request.username
     password = auth_request.password
     if not authenticate_user(username, password):
