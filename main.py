@@ -17,13 +17,10 @@ async def create_app() -> FastAPI:
     return app
 
 
-# app = FastAPI()
-
 app = FastAPI(title=settings.APP_NAME)
 
-# app.include_router(api_auth.router, prefix='/auth', tags=['auth'])
-app.mount('/', shorten_app)
 app.mount('/auth', auth_app)
+app.mount('/', shorten_app)
 
 
 @app.on_event('startup')
